@@ -1,0 +1,144 @@
+---
+title: "Elecciones Generales 2021"
+output: 
+  flexdashboard::flex_dashboard
+---
+
+<style>                     
+.navbar {
+  background-color:#1e325c;
+  border-color:#1e325c;
+}
+.navbar-brand {
+color:white!important;
+}
+</style>  
+
+```{r,include=FALSE}
+library(readxl)
+Resultados <- read_excel("BASE RESULTADOS EG2021 - 14.05.xlsx", 
+    sheet = "Prov")
+```
+
+```{r,include=FALSE}
+library(rio)
+library(readr)
+library(stringi)
+library(magrittr)
+library(sf)
+library(classInt)
+library(plotly)
+library(flexdashboard)
+library(ggplot2)
+library(ggpubr)
+library(tidyverse)
+library(ggrepel)
+library(repr)
+library(dygraphs)
+library(quantmod)
+library(rjson)
+library(lubridate)
+
+ubigeo=import("https://github.com/ChiaraZamoraM/ubigeo-peru/raw/master/equivalencia-ubigeos-oti-concytec.csv")
+```
+
+```{r,include=FALSE}
+ubigeo=ubigeo[,c(3,11)]
+ubigeo$cod_ubigeo_reniec=substr(ubigeo$cod_ubigeo_reniec,1, 4)  
+ubigeo=ubigeo[!duplicated(ubigeo),]
+PROV2=merge(Resultados,ubigeo,
+              by.x='Reniec',by.y="cod_ubigeo_reniec") 
+
+```
+
+```{r,include=FALSE}
+PROV=read_sf("PROVINCIAS.shp")
+#geojson <- rjson::fromJSON(file="PROVINCIAS.json")
+PROVTable=merge(PROV,PROV2,
+              by.x= "IDPROV", by.y ='cod_prov_inei')
+```
+
+```{r,include=FALSE}
+fig1=ggplot(PROVTable) +
+        geom_sf(aes(fill = Partido, text=paste0(PROVINCIA,": ",Partido," (",round(VotacionPorcVotos,1),"%)"))) +
+        labs(fill="Partido político",title = "Ganador primera vuelta")+
+        theme_void()
+
+fig1=ggplotly(fig1, tooltip = "text")
+```
+
+```{r,include=FALSE}
+fig2=ggplot(PROVTable) +
+        geom_sf(aes(fill = Partido2, text=paste0(PROVINCIA,": ",Partido2," (",round(VotacionPorcVotos2,1),"%)"))) +
+        labs(fill="Partido político",title = "Posible ganador tras alianzas")+
+        theme_void()
+
+fig2=ggplotly(fig2, tooltip = "text")
+```
+
+```{r,include=FALSE}
+fig3=ggplot(PROVTable) +
+        geom_sf(aes(fill = FuerzaPopularPorcAlianza, text=paste0(PROVINCIA," (",round(FuerzaPopularPorcAlianza,1),"%)"))) +
+        labs(fill="Porcentaje",title = "Fuerza Popular")+
+        theme_void()
+
+fig3= fig3 + scale_fill_gradient(low = "cornsilk",  high = "darkorange3")
+
+fig3=ggplotly(fig3, tooltip = "text")
+
+fig4=ggplot(PROVTable) +
+        geom_sf(aes(fill = PeruLibrePorcAlianza, text=paste0(PROVINCIA," (",round(PeruLibrePorcAlianza,1),"%)"))) +
+        labs(fill="Porcentaje",title = "Perú Libre")+
+        theme_void()
+
+fig4= fig4 + scale_fill_gradient(low = "beige",  high = "darkred")
+
+fig4=ggplotly(fig4, tooltip = "text")
+
+#final= subplot(fig3,fig4) %>% 
+#              layout(title = "<b> Posible porcentaje de votación tras alianzas </b>") %>% 
+#              layout(annotations = list(list(x = 0.2 , y = 1.01, text = "Fuerza Popular", showarrow = F, xref='paper', yref='paper'),
+#                                        list(x = 0.8 , y = 1.01, text = "Perú Libre", showarrow = F, xref='paper', yref='paper')))
+
+#final
+```
+Column {data-width=120}
+-------------------------------------
+
+### Apuntes
+
+Se ha tomado en consideración las siguientes alianzas:
+
+* **Fuerza Popular**: Avanza País, Perú Patria Segura, Victoria Nacional, Renovación Popular, PPC, Alianza para el Progreso.
+* **Perú Libre**: Juntos por el Perú, Frente Amplio, Democracia Directa, UPP, RUNA.
+
+Column {data-width=440}
+-------------------------------------
+    
+### Primera vuelta sin alianzas
+    
+```{r}
+fig1
+```
+
+### Primera vuelta a partir de alianzas
+
+```{r}
+fig2
+```
+   
+Column {data-width=440}
+-------------------------------------
+    
+### Posible porcentaje de votación tras alianzas
+    
+```{r}
+fig3
+```
+    
+### Posible porcentaje de votación tras alianzas
+
+```{r}
+fig4
+```
+
